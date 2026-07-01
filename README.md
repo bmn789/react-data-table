@@ -1,6 +1,6 @@
 # React Data Table — Reusable Filter & Data Table System
 
-A fully type-safe, configuration-driven React 18, TypeScript, and Material UI v9 application featuring a dynamic filter builder, a unified reusable `DataTable` component, and multiple data-driven pages. The system supports nested-field filtering, array-based records, real-time statistics, and column-aware exports — all driven by a flexible client-side engine.
+A fully type-safe, configuration-driven React 19, TypeScript, and Material UI v9 application featuring a dynamic filter builder, a unified reusable `DataTable` component, and multiple data-driven pages. The system supports nested-field filtering, array-based records, real-time statistics, and column-aware exports — all driven by a flexible client-side engine.
 
 ---
 
