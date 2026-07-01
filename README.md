@@ -1,40 +1,58 @@
-# Reusable Dynamic Filter Component System & Data Table
+# React Data Table — Reusable Filter & Data Table System
 
-A fully type-safe, configuration-driven React 18, TypeScript, and Material UI v9 dynamic filter component system. The system can filter nested fields and array-based records using a robust client-side filtering engine, updating statistical charts and sortable data grids in real-time.
-
-## 🚀 Key Features
-
-*   **Configuration-Driven Architecture**: Define filter schemas dynamically using configuration objects. The system automatically renders corresponding operators and inputs (e.g. text inputs, numeric range sliders, calendar ranges, multiselect lists, checkboxes, and boolean selectors).
-*   **Logical AND & OR Operations**: Combines rules using OR conditions when filtering on the same field, and AND conditions when filtering across different fields.
-*   **MUI v9 & Google Typography**: Clean, responsive layout with Outfit & Inter typefaces, modern border styling, and micro-hover transitions.
-*   **Real-Time Debounced Searching**: Inputs are debounced by 300ms to ensure filtering remains performant and doesn't cause typing lags.
-*   **Dynamic Column Control**: Select and toggle the visibility of individual data columns dynamically through an interactive dropdown modal, instantly adjusting the table layout.
-*   **Column-Aware Data Exporting**: Download filtered datasets instantly to either `.csv` or `.json` formats. The export system automatically respects and dynamically filters the dataset based on active column visibility selections configured by the user.
-*   **Adaptive Dual-Theme Mode (Light & Dark)**: Features a beautiful, custom-designed dark and light mode theme leveraging Material UI palette overrides. Includes easy-to-use toggle controls placed in the sidebar footer and individual page headers.
-*   **Persistent Preferences**: Automatically saves and loads the user's preferred theme mode (Light or Dark) in `localStorage`, maintaining their preferred style across page refreshes and reloads. Defaults cleanly to Light Mode on first-time visits.
-*   **Directory Metrics**: Insight cards summarizing total results, matching percentages, average salaries, and project counts of matches.
-*   **Interactive Sorting & Pagination**: Sort nested location keys or direct properties dynamically (both ascending and descending) with paging limits.
+A fully type-safe, configuration-driven React 18, TypeScript, and Material UI v9 application featuring a dynamic filter builder, a unified reusable `DataTable` component, and multiple data-driven pages. The system supports nested-field filtering, array-based records, real-time statistics, and column-aware exports — all driven by a flexible client-side engine.
 
 ---
 
-## 📁 File Structure
+## 🚀 Key Features
+
+- **Unified Reusable DataTable**: A single generic `DataTable<T>` component inside `src/components/table/` drives all data pages. Pass `columns: ColumnDef<T>[]` with optional custom `render()` functions — no page-specific table components needed.
+- **Configuration-Driven Filters**: Define filter schemas via `FilterFieldConfig[]`. The `FilterBuilder` automatically renders operators and inputs (text, number ranges, date pickers, multi-selects, booleans).
+- **Logical AND / OR Filtering**: Combines rules with OR within the same field and AND across different fields.
+- **Real-Time Debounced Searching**: Inputs are debounced by 300 ms to keep filtering performant.
+- **Interactive Sorting & Pagination**: Sort any column (ascending/descending), choose rows-per-page (10 / 25 / 50), and navigate with prev/next controls.
+- **Row Selection with Checkboxes**: Select individual rows or toggle the entire page. A dismissible chip shows the selected count.
+- **Dynamic Column Visibility**: Toggle individual columns through the **Columns** modal. Column state is managed per-table instance.
+- **Column-Aware Export**: Export the filtered dataset as `.csv` or `.json`. Only currently visible columns are included.
+- **Dual Theme (Light & Dark)**: Custom MUI v9 theme with persistent `localStorage` sync. Toggle from the sidebar footer or any page header.
+- **Multi-Page App**: Three independent pages — **Employee Directory**, **Users**, and **Transactions** — each wired to its own dataset, filter config, and column definitions.
+- **Dashboard Metrics** (Employees page): KPI cards for totals, matching percentage, average salary, and active count.
+- **Empty State UI**: Friendly "No matching records" illustration when filters return no results.
+
+---
+
+## 📁 Project Structure
 
 ```text
-├── src/
-│   ├── components/
-│   │   ├── DashboardStats.tsx  # KPI Summary Widget Cards
-│   │   ├── FilterBuilder.tsx   # Dynamic filter builder form and custom inputs
-│   │   └── DataTable.tsx       # Sortable and paginated table with CSV/JSON exports
-│   ├── data/
-│   │   └── employees.json      # Mock dataset of 55 employee records
-│   ├── types/
-│   │   ├── employee.ts         # TypeScript structures for employee data
-│   │   └── filter.ts           # Types, operators, and schemas for filter builder
-│   ├── utils/
-│   │   └── filterEngine.ts     # Client-side AND/OR filter execution engine
-│   ├── App.tsx                 # App layout coordinating state
-│   ├── index.css               # Styling and Google font imports
-│   └── main.tsx                # Entry-point wrapper
+src/
+├── components/
+│   ├── table/                          # ✅ Reusable table module
+│   │   ├── DataTable.tsx               #    Unified generic DataTable<T> component
+│   │   ├── ColumnVisibilityModal.tsx   #    Column toggle modal (co-located)
+│   │   └── index.ts                    #    Barrel: export { DataTable, ColumnDef, … }
+│   ├── DashboardStats.tsx              # KPI summary cards (Employees page)
+│   └── FilterBuilder.tsx               # Dynamic filter form & custom inputs
+├── data/
+│   ├── employees.json                  # 55 mock employee records
+│   ├── users.json                      # Mock user records
+│   └── transactions.json              # Mock transaction records
+├── pages/
+│   ├── layout/
+│   │   ├── Layout.tsx                  # Shell with sidebar navigation
+│   │   └── PageHeader.tsx              # Per-page header with theme toggle
+│   ├── Home.tsx                        # Employee Directory page
+│   ├── Users.tsx                       # Users page
+│   └── Transactions.tsx               # Transactions page
+├── types/
+│   ├── employee.ts                     # Employee TypeScript interfaces
+│   ├── user.ts                         # User TypeScript interfaces
+│   ├── transaction.ts                  # Transaction TypeScript interfaces
+│   └── filter.ts                       # FilterRule, FilterFieldConfig types
+├── utils/
+│   └── filterEngine.ts                 # Client-side AND/OR filter execution engine
+├── App.tsx                             # Router and ThemeProvider setup
+├── index.css                           # Global styles & Google font imports
+└── main.tsx                            # Application entry point
 ```
 
 ---
@@ -43,84 +61,150 @@ A fully type-safe, configuration-driven React 18, TypeScript, and Material UI v9
 
 ### Prerequisites
 
-*   Node.js 18+
-*   npm or yarn
+- Node.js 18+
+- npm or yarn
 
 ### Installation & Run
 
-1.  Install dependencies:
-    ```bash
-    npm install
-    ```
-2.  Launch the development server:
-    ```bash
-    npm run dev
-    ```
-3.  Open [http://localhost:3000](http://localhost:3000) in your web browser.
+```bash
+# Install dependencies
+npm install
+
+# Start the development server
+npm run dev
+```
+
+Open [http://localhost:5173](http://localhost:5173) in your browser.
 
 ---
 
-## 🔧 Schema Definition Example
+## 🧩 Using the Reusable DataTable
 
-To integrate the filter builder with a new table, pass the schema configuration array. No internal component modifications are required.
+Import from the `table/` barrel and pass a `columns` array with optional `render` functions:
+
+```tsx
+import { DataTable, type ColumnDef } from '../components/table';
+
+type User = { id: number; name: string; email: string; isActive: boolean };
+
+const columns: ColumnDef<Record<string, unknown>>[] = [
+  {
+    key: 'id',
+    label: 'ID',
+    minWidth: 70,
+    render: row => `#${row.id}`,
+  },
+  { key: 'name', label: 'Name', minWidth: 160 },
+  { key: 'email', label: 'Email', minWidth: 220 },
+  {
+    key: 'isActive',
+    label: 'Status',
+    sortable: false,
+    render: row => (
+      <Chip
+        label={row.isActive ? 'Active' : 'Inactive'}
+        color={row.isActive ? 'success' : 'default'}
+        size="small"
+      />
+    ),
+  },
+];
+
+<DataTable
+  title="Users"
+  data={filteredUsers}
+  columns={columns}
+  activeFilterCount={rules.length}
+  maxHeight={600}
+/>
+```
+
+### `ColumnDef<T>` Props
+
+| Prop | Type | Required | Description |
+|---|---|---|---|
+| `key` | `string` | ✅ | Field key on the data row |
+| `label` | `string` | ✅ | Column header text |
+| `render` | `(row: T) => ReactNode` | — | Custom cell renderer; falls back to `String(row[key])` |
+| `sortable` | `boolean` | — | Set `false` to disable sorting. Defaults to `true` |
+| `minWidth` | `number` | — | Min column width in px. Defaults to `120` |
+| `align` | `'left' \| 'center' \| 'right'` | — | Cell alignment. Defaults to `'left'` |
+
+### `DataTable` Props
+
+| Prop | Type | Required | Description |
+|---|---|---|---|
+| `title` | `string` | ✅ | Shown in the toolbar |
+| `data` | `T[]` | ✅ | Pre-filtered rows from the parent |
+| `columns` | `ColumnDef<T>[]` | ✅ | Column definitions |
+| `activeFilterCount` | `number` | — | Displays an active-filters chip when > 0 |
+| `maxHeight` | `number` | — | Scrollable table body height in px. Defaults to `500` |
+
+---
+
+## 🔧 Filter Schema Example
 
 ```typescript
-import { FilterFieldConfig } from './types/filter';
+import type { FilterFieldConfig } from './types/filter';
 
-const filterFieldConfigs: FilterFieldConfig[] = [
-  { id: 'name', label: 'Name', type: 'text', placeholder: 'Search name...' },
-  { id: 'salary', label: 'Salary', type: 'amount', placeholder: 'Enter salary...' },
+const filterConfigs: FilterFieldConfig[] = [
+  { id: 'name',     label: 'Name',    type: 'text',    placeholder: 'Search name...' },
+  { id: 'salary',   label: 'Salary',  type: 'amount' },
   { id: 'joinDate', label: 'Join Date', type: 'date' },
-  { id: 'isActive', label: 'Active Status', type: 'boolean' },
+  { id: 'isActive', label: 'Status',  type: 'boolean' },
   {
     id: 'skills',
     label: 'Skills',
     type: 'array',
     options: [
-      { label: 'React', value: 'React' },
-      { label: 'TypeScript', value: 'TypeScript' }
-    ]
+      { label: 'React',      value: 'React' },
+      { label: 'TypeScript', value: 'TypeScript' },
+    ],
   },
-  { id: 'address.city', label: 'City', type: 'text' }
+  { id: 'address.city', label: 'City', type: 'text' },  // nested field support
 ];
 ```
 
 ---
 
-## 🔍 Supported Operators
+## 🔍 Supported Filter Operators
 
-| Data Type | Available Operators | Input UI Rendered |
-| :--- | :--- | :--- |
-| **Text** | Contains, Equals, Starts With, Ends With, Does Not Contain | Debounced `TextField` (text) |
-| **Number** / **Amount** | Equals, Not Equal, Greater Than, Less Than, Greater Than or Equal, Less Than or Equal, Between | Debounced `TextField` (number) / Min-Max row |
-| **Date** | Between, Before, After, Relative | Two Date inputs (From / To) / Predefined ranges select |
+| Data Type | Available Operators | Input UI |
+|:---|:---|:---|
+| **Text** | Contains, Equals, Starts With, Ends With, Does Not Contain | Debounced `TextField` |
+| **Number / Amount** | Equals, ≠, >, <, ≥, ≤, Between | Number input / Min–Max row |
+| **Date** | Between, Before, After, Relative | Date pickers / Preset ranges |
 | **Select** | Is, Is Not | Option dropdown |
-| **Multi-Select** / **Array** | In, Not In, Contains Any, Contains All, Does Not Contain | Multiple checkbox select dropdown with chips |
-| **Boolean** | Is | True (Active) / False (Inactive) select dropdown |
+| **Array / Multi-Select** | In, Not In, Contains Any, Contains All, Does Not Contain | Checkbox multi-select |
+| **Boolean** | Is | Active / Inactive dropdown |
 
 ---
 
-## 🎨 Theme Customization & Persistence
+## 🎨 Theme System
 
-The application includes a dual-theme system built directly with Material UI v9 `ThemeProvider`.
-*   **Default State**: The application defaults to the **Light Theme** for first-time visitors.
-*   **Toggle Controls**: Users can switch themes via the theme toggle button (Sun/Moon icon) available in two convenient locations:
-    1.  **Sidebar Footer**: Located at the bottom left of the application sidebar, next to the user profile badge.
-    2.  **Page Header**: Located on the top-right side of individual page headers.
-*   **Local Storage Sync**: Every theme toggle updates the `theme-mode` key in `localStorage`. Upon reloading, the system retrieves and applies the stored theme automatically to prevent theme flashing.
+The application ships with a dual Light/Dark theme built on MUI v9 `ThemeProvider`.
+
+- **Default**: Light mode for first-time visitors.
+- **Toggle**: Sun/Moon icon in the sidebar footer **or** any page header.
+- **Persistence**: Stored under the `theme-mode` key in `localStorage`; restored on every reload.
 
 ---
 
 ## 📊 Column Visibility & Export
 
-*   **Column Customization**: Users can toggle which columns are visible inside the data table using the **Columns** visibility control modal.
-*   **Filtered Column Export**: Clicking on the **Export** button (available in both CSV and JSON formats) will generate an export containing *only* the columns currently visible in the table. This keeps exports relevant and aligned with the user's current view.
+- **Column Modal**: Click **Columns** in any table toolbar to show/hide individual columns. At least one column is always kept visible.
+- **Export CSV / JSON**: Only the currently visible columns are exported. The file is named after the table title (e.g. `employees_database_export.csv`).
 
 ---
 
-## 🧠 Design Rationale
+## 🧠 Design Notes
 
-1.  **Frontend Mocking API (Timeout Resolver)**: Simulated asynchronously using `Promise` and `setTimeout` (800ms) to mirror loading times of a backend server while remaining fully serverless, self-contained, and easily deployable.
-2.  **Verbatim Module Syntax**: Standard type-only imports (`import type { ... }`) are enforced for optimal compilations under strict TypeScript configurations.
-3.  **MUI v9 SlotProps**: Refactored from deprecated legacy attributes like `InputLabelProps` to the modern nested `slotProps` API.
-4.  **MUI v9 Grid Layout**: Migrated from legacy `<Grid item xs={...}>` to the simplified `<Grid size={{ xs: ... }}>` grid API.
+| Decision | Rationale |
+|---|---|
+| Single `DataTable<T>` | Replaces the previous `DataTable.tsx` (Employee-specific) and `GenericDataTable.tsx` (generic) with one unified, fully generic component. |
+| `table/` folder | Co-locates `DataTable`, `ColumnVisibilityModal`, and the barrel `index.ts` for clean imports. |
+| `ColumnDef.render()` | Delegate cell rendering to the consumer so the table core stays data-agnostic (no Employee/Transaction logic inside). |
+| Simulated async loading | `Promise` + `setTimeout` mirrors a real API without a backend, keeping the app self-contained. |
+| `import type { … }` | Enforced for all type-only imports to comply with strict TypeScript `isolatedModules`. |
+| MUI v9 `slotProps` | Replaces deprecated `InputLabelProps`, `inputProps`, etc. with the modern nested slot API. |
+| MUI v9 `Grid size` | Uses `<Grid size={{ xs: 6 }}>` instead of the legacy `<Grid item xs={6}>`. |

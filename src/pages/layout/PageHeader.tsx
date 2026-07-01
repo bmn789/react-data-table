@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, Typography, IconButton, Tooltip, Breadcrumbs, Link as MuiLink } from '@mui/material';
 import { Sun, Moon } from 'lucide-react';
-import { useThemeMode } from '../contexts/ThemeContext';
+import { useThemeMode } from '../../contexts/ThemeContext';
 import { NavLink, useLocation } from 'react-router';
 
 interface PageHeaderProps {

@@ -1,11 +1,11 @@
 import React from 'react';
 import { Box, Container, Typography, CircularProgress, Alert, Chip } from '@mui/material';
 import { CreditCard } from 'lucide-react';
-import { PageHeader, PageBreadcrumbs } from './PageHeader';
+import { PageHeader, PageBreadcrumbs } from './layout/PageHeader';
 import type { Transaction } from '../types/transaction';
 import type { FilterFieldConfig, FilterRule } from '../types/filter';
 import { FilterBuilder } from '../components/FilterBuilder';
-import { GenericDataTable, type ColumnDef } from '../components/GenericDataTable';
+import { DataTable as GenericDataTable, type ColumnDef } from '../components/table';
 import { filterData } from '../utils/filterEngine';
 import rawTransactions from '../data/transactions.json';
 

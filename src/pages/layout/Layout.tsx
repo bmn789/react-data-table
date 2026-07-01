@@ -2,7 +2,7 @@ import React from 'react';
 import { Box, Typography, List, ListItemButton, ListItemIcon, ListItemText, Divider, IconButton, Tooltip, Drawer } from '@mui/material';
 import { NavLink, Outlet, useLocation } from 'react-router';
 import { Home, BarChart3, Settings, ChevronLeft, ChevronRight, Users, CreditCard, Sun, Moon, Menu } from 'lucide-react';
-import { useThemeMode } from '../contexts/ThemeContext';
+import { useThemeMode } from '../../contexts/ThemeContext';
 
 export const Layout: React.FC = () => {
   const [collapsed, setCollapsed] = React.useState<boolean>(false);

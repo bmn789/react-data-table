@@ -24,9 +24,10 @@ import {
   Download,
   Eye,
   FileDown,
+  AlertCircle,
 } from 'lucide-react';
 import { ColumnVisibilityModal } from './ColumnVisibilityModal';
-import type { FilterFieldConfig } from '../types/filter';
+import type { FilterFieldConfig } from '../../types/filter';
 
 // ─── Column definition ────────────────────────────────────────────────────────
 
@@ -35,25 +36,32 @@ export interface ColumnDef<T = Record<string, unknown>> {
   key: string;
   /** Display header label */
   label: string;
-  /** Custom cell renderer. Defaults to String(row[key]) */
+  /**
+   * Custom cell renderer. Receives the full row object.
+   * Defaults to String(row[key]) when omitted.
+   */
   render?: (row: T) => React.ReactNode;
   /** Whether the column is sortable (sorts by raw row[key] value). Default true */
   sortable?: boolean;
   /** Min-width for the column in px */
   minWidth?: number;
+  /** Text alignment for column header and cells */
+  align?: 'left' | 'center' | 'right';
 }
 
-interface GenericDataTableProps<T extends Record<string, unknown>> {
-  /** Human-readable table title */
+export interface DataTableProps<T extends Record<string, unknown>> {
+  /** Human-readable table title shown in the toolbar */
   title: string;
-  /** All available data (pre-filtered by parent) */
+  /** All data rows (pre-filtered by the parent) */
   data: T[];
-  /** Column definitions */
+  /** Column definitions — drives header, body, sort, and export */
   columns: ColumnDef<T>[];
-  /** Filter configs passed from parent (used to show active count hint) */
-  filterConfigs: FilterFieldConfig[];
-  /** Count of active filter rules */
+  /** Filter configs — used only to display the active-filter count chip */
+  filterConfigs?: FilterFieldConfig[];
+  /** Number of active filter rules (shown as a chip in the toolbar) */
   activeFilterCount?: number;
+  /** Max height of the scrollable table body (px). Defaults to 500 */
+  maxHeight?: number;
 }
 
 type SortDir = 'asc' | 'desc';
@@ -62,12 +70,13 @@ const PAGE_SIZES = [10, 25, 50];
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function GenericDataTable<T extends Record<string, unknown>>({
+export function DataTable<T extends Record<string, unknown>>({
   title,
   data,
   columns,
   activeFilterCount = 0,
-}: GenericDataTableProps<T>) {
+  maxHeight = 500,
+}: DataTableProps<T>) {
   // Sorting
   const [sortKey, setSortKey] = React.useState<string>(columns[0]?.key ?? '');
   const [sortDir, setSortDir] = React.useState<SortDir>('asc');
@@ -76,24 +85,29 @@ export function GenericDataTable<T extends Record<string, unknown>>({
   const [page, setPage] = React.useState(1);
   const [pageSize, setPageSize] = React.useState(10);
 
-  // Column visibility — initialise all visible
+  // Column visibility — all visible by default
   const [visibleCols, setVisibleCols] = React.useState<Record<string, boolean>>(
     () => Object.fromEntries(columns.map(c => [c.key, true]))
   );
   const [colModalOpen, setColModalOpen] = React.useState(false);
 
-  // Row Selection State
+  // Row selection
   const [selectedIds, setSelectedIds] = React.useState<Set<string | number>>(new Set());
 
-  // Reset to page 1 when data changes (after filter)
-  React.useEffect(() => { setPage(1); setSelectedIds(new Set()); }, [data]);
+  // Reset page & selection whenever the source data changes (e.g. after filter)
+  React.useEffect(() => {
+    setPage(1);
+    setSelectedIds(new Set());
+  }, [data]);
 
-  // Sorted data
+  // ── Sorting ─────────────────────────────────────────────────────────────────
+
   const sorted = React.useMemo(() => {
     return [...data].sort((a, b) => {
       const av = a[sortKey];
       const bv = b[sortKey];
-      if (av === undefined || bv === undefined) return 0;
+      if (av === undefined || av === null) return 1;
+      if (bv === undefined || bv === null) return -1;
       if (typeof av === 'number' && typeof bv === 'number') {
         return sortDir === 'asc' ? av - bv : bv - av;
       }
@@ -103,17 +117,32 @@ export function GenericDataTable<T extends Record<string, unknown>>({
     });
   }, [data, sortKey, sortDir]);
 
-  // Paginated slice
+  const handleSort = (key: string) => {
+    if (sortKey === key) {
+      setSortDir(d => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setSortDir('asc');
+    }
+  };
+
+  // ── Pagination ───────────────────────────────────────────────────────────────
+
   const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
   const paginated = sorted.slice((page - 1) * pageSize, page * pageSize);
+
+  // ── Column visibility ────────────────────────────────────────────────────────
 
   const visibleColumns = columns.filter(c => visibleCols[c.key]);
   const visibleColumnsCount = visibleColumns.length;
 
-  // Page-level selection helpers (computed after paginated)
+  // ── Row selection ────────────────────────────────────────────────────────────
+
   const pageKeys = paginated.map(row => (row.id ?? '') as string | number);
-  const allPageSelected = pageKeys.length > 0 && pageKeys.every(k => selectedIds.has(k));
-  const somePageSelected = pageKeys.some(k => selectedIds.has(k)) && !allPageSelected;
+  const allPageSelected =
+    pageKeys.length > 0 && pageKeys.every(k => selectedIds.has(k));
+  const somePageSelected =
+    pageKeys.some(k => selectedIds.has(k)) && !allPageSelected;
 
   const handleSelectAll = () => {
     setSelectedIds(prev => {
@@ -130,32 +159,26 @@ export function GenericDataTable<T extends Record<string, unknown>>({
   const handleSelectRow = (key: string | number) => {
     setSelectedIds(prev => {
       const next = new Set(prev);
-      if (next.has(key)) next.delete(key); else next.add(key);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
       return next;
     });
   };
 
-  const handleSort = (key: string) => {
-    if (sortKey === key) {
-      setSortDir(d => (d === 'asc' ? 'desc' : 'asc'));
-    } else {
-      setSortKey(key);
-      setSortDir('asc');
-    }
-  };
+  // ── Export ───────────────────────────────────────────────────────────────────
 
-  // Export helpers
+  const exportTooltipLabel = `Exporting ${visibleColumnsCount} of ${columns.length} columns`;
+
   const exportToCSV = () => {
     const headers = visibleColumns.map(c => c.label).join(',');
     const rows = sorted.map(row =>
-      visibleColumns.map(c => {
-        const v = row[c.key];
-        let str = v === null || v === undefined ? '' : String(v);
-        if (c.key === 'id') {
-          str = `#${str}`;
-        }
-        return str.includes(',') ? `"${str}"` : str;
-      }).join(',')
+      visibleColumns
+        .map(c => {
+          const v = row[c.key];
+          const str = v === null || v === undefined ? '' : String(v);
+          return str.includes(',') ? `"${str}"` : str;
+        })
+        .join(',')
     );
     const blob = new Blob([[headers, ...rows].join('\n')], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
@@ -168,15 +191,11 @@ export function GenericDataTable<T extends Record<string, unknown>>({
 
   const exportToJSON = () => {
     const filtered = sorted.map(row =>
-      Object.fromEntries(visibleColumns.map(c => {
-        let val = row[c.key];
-        if (c.key === 'id') {
-          val = `#${val}`;
-        }
-        return [c.key, val];
-      }))
+      Object.fromEntries(visibleColumns.map(c => [c.key, row[c.key]]))
     );
-    const blob = new Blob([JSON.stringify(filtered, null, 2)], { type: 'application/json' });
+    const blob = new Blob([JSON.stringify(filtered, null, 2)], {
+      type: 'application/json',
+    });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -185,7 +204,7 @@ export function GenericDataTable<T extends Record<string, unknown>>({
     URL.revokeObjectURL(url);
   };
 
-  const exportTooltipLabel = `Exporting ${visibleColumnsCount} of ${columns.length} columns`;
+  // ── Render ───────────────────────────────────────────────────────────────────
 
   return (
     <Paper
@@ -195,6 +214,7 @@ export function GenericDataTable<T extends Record<string, unknown>>({
         border: '1px solid',
         borderColor: 'divider',
         overflow: 'hidden',
+        bgcolor: 'background.paper',
       }}
     >
       {/* ── Toolbar ── */}
@@ -211,8 +231,9 @@ export function GenericDataTable<T extends Record<string, unknown>>({
           gap: 1,
         }}
       >
+        {/* Left: title + chips */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1rem' }}>
+          <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1rem', color: 'text.primary' }}>
             {title}
           </Typography>
           <Chip
@@ -239,9 +260,14 @@ export function GenericDataTable<T extends Record<string, unknown>>({
           )}
         </Box>
 
+        {/* Right: action buttons */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
           {/* Column visibility */}
-          <Tooltip title={`${visibleColumnsCount} of ${columns.length} columns visible`} arrow placement="top">
+          <Tooltip
+            title={`${visibleColumnsCount} of ${columns.length} columns visible`}
+            arrow
+            placement="top"
+          >
             <Button
               size="small"
               variant="outlined"
@@ -284,17 +310,14 @@ export function GenericDataTable<T extends Record<string, unknown>>({
       </Box>
 
       {/* ── Table ── */}
-      <TableContainer sx={{ overflowX: 'auto', maxHeight: 400 }}>
+      <TableContainer sx={{ overflowX: 'auto', maxHeight }}>
         <Table stickyHeader size="small">
           <TableHead>
             <TableRow>
               {/* Select-all checkbox */}
               <TableCell
                 padding="checkbox"
-                sx={{
-                  bgcolor: 'background.paper',
-                  py: 1.5
-                }}
+                sx={{ bgcolor: 'background.paper', py: 1.5 }}
               >
                 <Checkbox
                   size="small"
@@ -304,9 +327,11 @@ export function GenericDataTable<T extends Record<string, unknown>>({
                   slotProps={{ input: { 'aria-label': 'select all rows on page' } }}
                 />
               </TableCell>
+
               {visibleColumns.map(col => (
                 <TableCell
                   key={col.key}
+                  align={col.align ?? 'left'}
                   sx={{
                     fontWeight: 700,
                     fontSize: '0.78rem',
@@ -316,7 +341,7 @@ export function GenericDataTable<T extends Record<string, unknown>>({
                     whiteSpace: 'nowrap',
                     minWidth: col.minWidth ?? 120,
                     bgcolor: 'background.paper',
-                    py: 1.5
+                    py: 1.5,
                   }}
                 >
                   {col.sortable !== false ? (
@@ -338,8 +363,30 @@ export function GenericDataTable<T extends Record<string, unknown>>({
           <TableBody>
             {paginated.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={visibleColumns.length} sx={{ textAlign: 'center', py: 6, color: 'text.secondary' }}>
-                  No records match the current filters.
+                <TableCell
+                  colSpan={visibleColumns.length + 1}
+                  align="center"
+                  sx={{ py: 8 }}
+                >
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: 1.5,
+                    }}
+                  >
+                    <AlertCircle size={32} color="#9ca3af" />
+                    <Typography
+                      variant="body1"
+                      sx={{ color: 'text.secondary', fontWeight: 500 }}
+                    >
+                      No matching records found
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                      Try relaxing your filter parameters or clearing all filters
+                    </Typography>
+                  </Box>
                 </TableCell>
               </TableRow>
             ) : (
@@ -351,8 +398,8 @@ export function GenericDataTable<T extends Record<string, unknown>>({
                     hover
                     selected={selectedIds.has(rowKey)}
                     sx={{
-                      '&:last-child td': { borderBottom: 0 },
-                      transition: 'background-color 0.15s',
+                      '&:last-child td, &:last-child th': { border: 0 },
+                      transition: 'background-color 0.15s ease',
                       cursor: 'pointer',
                     }}
                     onClick={() => handleSelectRow(rowKey)}
@@ -365,12 +412,16 @@ export function GenericDataTable<T extends Record<string, unknown>>({
                         slotProps={{ input: { 'aria-label': `select row ${rowKey}` } }}
                       />
                     </TableCell>
+
                     {visibleColumns.map(col => (
                       <TableCell
                         key={col.key}
+                        align={col.align ?? 'left'}
                         sx={{ whiteSpace: 'nowrap', fontSize: '0.875rem', py: 1.25 }}
                       >
-                        {col.render ? col.render(row) : String(row[col.key] ?? '—')}
+                        {col.render
+                          ? col.render(row)
+                          : String(row[col.key] ?? '—')}
                       </TableCell>
                     ))}
                   </TableRow>
@@ -410,11 +461,16 @@ export function GenericDataTable<T extends Record<string, unknown>>({
           <Select
             size="small"
             value={pageSize}
-            onChange={e => { setPageSize(Number(e.target.value)); setPage(1); }}
+            onChange={e => {
+              setPageSize(Number(e.target.value));
+              setPage(1);
+            }}
             sx={{ fontSize: '0.8rem', height: 28, minWidth: 60 }}
           >
             {PAGE_SIZES.map(s => (
-              <MenuItem key={s} value={s}>{s}</MenuItem>
+              <MenuItem key={s} value={s}>
+                {s}
+              </MenuItem>
             ))}
           </Select>
 

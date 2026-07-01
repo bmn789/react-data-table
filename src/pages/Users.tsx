@@ -1,11 +1,11 @@
 import React from 'react';
 import { Box, Container, CircularProgress, Alert } from '@mui/material';
 import { Users as UsersIcon } from 'lucide-react';
-import { PageHeader, PageBreadcrumbs } from './PageHeader';
+import { PageHeader, PageBreadcrumbs } from './layout/PageHeader';
 import type { User } from '../types/user';
 import type { FilterFieldConfig, FilterRule } from '../types/filter';
 import { FilterBuilder } from '../components/FilterBuilder';
-import { GenericDataTable, type ColumnDef } from '../components/GenericDataTable';
+import { DataTable as GenericDataTable, type ColumnDef } from '../components/table';
 import { filterData } from '../utils/filterEngine';
 import rawUsers from '../data/users.json';
 import { Chip as MuiChip } from '@mui/material';
